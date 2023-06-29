@@ -16,7 +16,8 @@ args = parser.parse_args()
 
 def main():
     model = posenet.load_model(args.model)
-    model = model.cuda()
+    model = model.to('cpu')
+
     output_stride = model.output_stride
 
     cap = cv2.VideoCapture(args.cam_id)
@@ -30,7 +31,7 @@ def main():
             cap, scale_factor=args.scale_factor, output_stride=output_stride)
 
         with torch.no_grad():
-            input_image = torch.Tensor(input_image).cuda()
+            input_image = torch.Tensor(input_image).to('cpu')
 
             heatmaps_result, offsets_result, displacement_fwd_result, displacement_bwd_result = model(input_image)
 
@@ -45,12 +46,24 @@ def main():
 
         keypoint_coords *= output_scale
 
+        num_people = len([score for score in pose_scores if score > 0.15])
+        avg_confidence = sum(pose_scores) / len(pose_scores) if len(pose_scores) > 0 else 0
+
         # TODO this isn't particularly fast, use GL for drawing and display someday...
         overlay_image = posenet.draw_skel_and_kp(
             display_image, pose_scores, keypoint_scores, keypoint_coords,
             min_pose_score=0.15, min_part_score=0.1)
 
-        cv2.imshow('posenet', overlay_image)
+        overlay = overlay_image.copy()
+        cv2.rectangle(overlay, (0, 0), (430, 100), (0, 255, 0), -1)  # Draw a green rectangle
+        cv2.addWeighted(overlay, 0.5, display_image, 0.5, 0, display_image)
+        cv2.putText(display_image, f"Number of people: {num_people}", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(display_image, f"Average confidence: {avg_confidence:.2f}", (10, 70),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        
+        cv2.imshow('posenet', display_image)
+
         frame_count += 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
