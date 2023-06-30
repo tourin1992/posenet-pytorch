@@ -76,7 +76,7 @@ def draw_skeleton(
 
 
 def draw_skel_and_kp(
-        img, instance_scores, keypoint_scores, keypoint_coords,
+        img, instance_scores, keypoint_scores, keypoint_coords, line_thickness,
         min_pose_score=0.5, min_part_score=0.5):
 
     out_img = img
@@ -99,5 +99,5 @@ def draw_skel_and_kp(
         out_img = cv2.drawKeypoints(
             out_img, cv_keypoints, outImage=np.array([]), color=(255, 255, 0),
             flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-    out_img = cv2.polylines(out_img, adjacent_keypoints, isClosed=False, color=(255, 255, 0))
+    out_img = cv2.polylines(out_img, adjacent_keypoints, thickness=line_thickness, isClosed=False, color=(255, 255, 0))
     return out_img
