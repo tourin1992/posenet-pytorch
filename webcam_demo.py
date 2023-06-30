@@ -11,6 +11,7 @@ parser.add_argument('--cam_id', type=int, default=0)
 parser.add_argument('--cam_width', type=int, default=1280)
 parser.add_argument('--cam_height', type=int, default=720)
 parser.add_argument('--scale_factor', type=float, default=0.7125)
+parser.add_argument('--line_thickness', type=int, default=3)
 args = parser.parse_args()
 
 
@@ -51,7 +52,7 @@ def main():
 
         # TODO this isn't particularly fast, use GL for drawing and display someday...
         overlay_image = posenet.draw_skel_and_kp(
-            display_image, pose_scores, keypoint_scores, keypoint_coords,
+            display_image, pose_scores, keypoint_scores, keypoint_coords, line_thickness=args.line_thickness,
             min_pose_score=0.15, min_part_score=0.1)
 
         overlay = overlay_image.copy()
