@@ -10,8 +10,10 @@ parser.add_argument('--model', type=int, default=101)
 parser.add_argument('--cam_id', type=int, default=0)
 parser.add_argument('--cam_width', type=int, default=1280)
 parser.add_argument('--cam_height', type=int, default=720)
-parser.add_argument('--scale_factor', type=float, default=0.7125)
-parser.add_argument('--line_thickness', type=int, default=3)
+parser.add_argument('--img_width', type=int, default=2560) # 2560, 1920
+parser.add_argument('--img_height', type=int, default=1440) # 1440, 1080
+parser.add_argument('--scale_factor', type=float, default=0.7125) # 0.2 for higher fps
+parser.add_argument('--line_thickness', type=int, default=6)
 args = parser.parse_args()
 
 
@@ -26,8 +28,9 @@ def main():
     cap.set(4, args.cam_height)
 
     start = time.time()
-    frame_count = 0
+    frame_count, curr_frames = 0, 0
     while True:
+        curr_start = time.time()
         input_image, display_image, output_scale = posenet.read_cap(
             cap, scale_factor=args.scale_factor, output_stride=output_stride)
 
@@ -56,16 +59,21 @@ def main():
             min_pose_score=0.15, min_part_score=0.1)
 
         overlay = overlay_image.copy()
-        cv2.rectangle(overlay, (0, 0), (430, 100), (0, 255, 0), -1)  # Draw a green rectangle
-        cv2.addWeighted(overlay, 0.5, display_image, 0.5, 0, display_image)
-        cv2.putText(display_image, f"Number of people: {num_people}", (10, 30),
+        overlay_resized = cv2.resize(overlay, dsize=(args.img_width, args.img_height))
+        display_image_resized = cv2.resize(display_image, dsize=(args.img_width, args.img_height))
+        frame_count += 1
+        fps = 1 / (time.time() - curr_start)
+        cv2.rectangle(overlay_resized, (0, 0), (430, 130), (0, 255, 0), -1)  # Draw a green rectangle
+        cv2.addWeighted(overlay_resized, 0.5, display_image_resized, 0.5, 0, display_image_resized)
+        cv2.putText(display_image_resized, f"Number of people: {num_people}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-        cv2.putText(display_image, f"Average confidence: {avg_confidence:.2f}", (10, 70),
+        cv2.putText(display_image_resized, f"Average confidence: {avg_confidence:.2f}", (10, 70),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(display_image_resized, f"FPS: {fps:.2f}", (10, 110),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         
-        cv2.imshow('posenet', display_image)
+        cv2.imshow('posenet', display_image_resized)
 
-        frame_count += 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
